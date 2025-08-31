@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Optional, Dict
 from dataclasses import dataclass, asdict
 import yaml
+from pathlib import Path
 
 
 @dataclass
@@ -27,6 +28,15 @@ class ThemeSettings:
     custom_saturation: float = 0.8
     custom_brightness: float = 0.9
     use_custom_theme: bool = False
+    
+    # Hardware integration settings
+    hardware_control_enabled: bool = False
+    
+    # Theme transition settings
+    transition_duration_ms: int = 150
+    transition_easing: str = "ease_out"  # "linear", "ease_in", "ease_out", "ease_in_out"
+    interpolation_steps: int = 30
+    debounce_ms: int = 50
 
 
 @dataclass
@@ -35,8 +45,22 @@ class HardwareSettings:
     ble_device_name: str = "EDMC_Controller"
     enable_ble: bool = True
     button_debounce_ms: int = 50
-    pot_smoothing: float = 0.1
+    pot_smoothing: float = 0.85  # Changed from 0.1 to 0.85 for better smoothing
     invert_pot: bool = False
+    
+    # Potentiometer calibration settings
+    pot_min_value: float = 0.0
+    pot_max_value: float = 1.0
+    pot_dead_zone: float = 0.02
+    sensitivity_curve: str = "linear"  # "linear", "exponential", "logarithmic"
+    
+    # Hue range mapping for theme control
+    hue_range_start: float = 0.0  # Starting hue (0-1)
+    hue_range_end: float = 1.0    # Ending hue (0-1)
+    
+    # Hardware theme control
+    enable_hardware_theme_control: bool = False
+    theme_update_rate_ms: int = 100  # Rate limit for theme updates
 
 
 @dataclass
@@ -164,4 +188,58 @@ class AppSettings:
         self.hardware = HardwareSettings()
         self.integration = IntegrationSettings()
         self.ui = UISettings()
+        self.save()
+    
+    def get_hardware_calibration_config(self):
+        """Get hardware calibration configuration for theme manager"""
+        from .themes import HardwareCalibration
+        
+        return HardwareCalibration(
+            min_value=self.hardware.pot_min_value,
+            max_value=self.hardware.pot_max_value,
+            dead_zone=self.hardware.pot_dead_zone,
+            smoothing_factor=self.hardware.pot_smoothing,
+            invert=self.hardware.invert_pot,
+            hue_range_start=self.hardware.hue_range_start,
+            hue_range_end=self.hardware.hue_range_end,
+            sensitivity_curve=self.hardware.sensitivity_curve
+        )
+    
+    def get_theme_transition_config(self):
+        """Get theme transition configuration for theme manager"""
+        from .themes import ThemeTransition
+        
+        return ThemeTransition(
+            duration_ms=self.theme.transition_duration_ms,
+            easing=self.theme.transition_easing,
+            interpolation_steps=self.theme.interpolation_steps,
+            debounce_ms=self.theme.debounce_ms
+        )
+    
+    def is_hardware_theme_control_enabled(self) -> bool:
+        """Check if hardware theme control is enabled"""
+        return (
+            self.hardware.enable_hardware_theme_control and 
+            self.theme.hardware_control_enabled and 
+            self.hardware.enable_ble
+        )
+    
+    def save_hardware_calibration(self, calibration):
+        """Save hardware calibration settings"""
+        self.hardware.pot_min_value = calibration.min_value
+        self.hardware.pot_max_value = calibration.max_value
+        self.hardware.pot_dead_zone = calibration.dead_zone
+        self.hardware.pot_smoothing = calibration.smoothing_factor
+        self.hardware.invert_pot = calibration.invert
+        self.hardware.hue_range_start = calibration.hue_range_start
+        self.hardware.hue_range_end = calibration.hue_range_end
+        self.hardware.sensitivity_curve = calibration.sensitivity_curve
+        self.save()
+    
+    def save_theme_transition_config(self, config):
+        """Save theme transition configuration"""
+        self.theme.transition_duration_ms = config.duration_ms
+        self.theme.transition_easing = config.easing
+        self.theme.interpolation_steps = config.interpolation_steps
+        self.theme.debounce_ms = config.debounce_ms
         self.save()
