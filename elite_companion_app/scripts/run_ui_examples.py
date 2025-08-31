@@ -8,8 +8,10 @@ import sys
 import traceback
 from pathlib import Path
 
-# Add current directory to Python path
+# Add current directory and parent to Python path
 current_dir = Path(__file__).parent
+parent_dir = current_dir.parent
+sys.path.insert(0, str(parent_dir))
 sys.path.insert(0, str(current_dir))
 
 # Configure WSL Qt environment before importing PyQt6

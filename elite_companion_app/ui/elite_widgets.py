@@ -12,7 +12,11 @@ import os
 from typing import Optional, List, Callable
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# Add app root to path for imports
+from pathlib import Path
+app_root = Path(__file__).parent.parent
+if str(app_root) not in sys.path:
+    sys.path.insert(0, str(app_root))
 from config.themes import ThemeColors, HardwareThemeManager
 
 
@@ -522,6 +526,7 @@ class RealTimeThemeManager(QObject):
         self._registered_widgets = []
         self._current_theme = None
         self._app = None
+        self._applying_theme = False
     
     def register_widget(self, widget):
         """Register a widget for theme updates"""
@@ -570,10 +575,15 @@ def get_global_theme_manager() -> RealTimeThemeManager:
 # Theme application function with enhanced real-time support
 def apply_elite_theme(app, theme_colors: ThemeColors, force_update: bool = False):
     """Apply Elite theme to the entire application with real-time support"""
-    colors = theme_colors.to_dict()
+    # Prevent circular calls by checking for ongoing theme application
+    if getattr(_global_theme_manager, '_applying_theme', False):
+        return
     
-    # Enhanced stylesheet compatible with Qt QSS
-    stylesheet = f"""
+    try:
+        colors = theme_colors.to_dict()
+        
+        # Enhanced stylesheet compatible with Qt QSS
+        stylesheet = f"""
     /* Global Application Style */
     * {{
         /* transition not supported in Qt stylesheets - handled by Qt animations instead */
@@ -726,14 +736,18 @@ def apply_elite_theme(app, theme_colors: ThemeColors, force_update: bool = False
     }}
     """
     
-    app.setStyleSheet(stylesheet)
+        app.setStyleSheet(stylesheet)
+        
+        # Also update palette for better integration
+        from config.themes import apply_theme_to_palette
+        apply_theme_to_palette(app, theme_colors)
     
-    # Also update palette for better integration
-    from config.themes import apply_theme_to_palette
-    apply_theme_to_palette(app, theme_colors)
-    
-    # Notify global theme manager
-    _global_theme_manager.apply_theme(theme_colors)
+        # Notify global theme manager without circular call
+        if not getattr(_global_theme_manager, '_applying_theme', False):
+            _global_theme_manager._current_theme = theme_colors
+        
+    except Exception as e:
+        print(f"Warning: Theme application failed: {e}")
 
 
 # Hardware integration helper functions
