@@ -1,0 +1,30 @@
+# Core GUI Framework
+PyQt6==6.6.1
+PyQt6-Qt6==6.6.1
+
+# EDMC Integration & Data APIs
+requests==2.31.0
+websocket-client==1.6.4
+
+# Spotify API
+spotipy==2.23.0
+
+# Hardware Interface
+bleak==0.21.1  # Bluetooth Low Energy
+pyserial==3.5   # Serial communication backup
+
+# Media & Assets
+Pillow==10.1.0  # Image processing
+opencv-python==4.8.1.78  # Video/GIF handling
+
+# Configuration
+PyYAML==6.0.1
+configparser==6.0.0
+
+# System Integration
+psutil==5.9.6  # Process monitoring (detect if ED is running)
+watchdog==3.0.0  # File system monitoring
+
+# Development
+pytest==7.4.3
+black==23.11.0
